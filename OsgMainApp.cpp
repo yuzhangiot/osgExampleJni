@@ -1,5 +1,7 @@
 //#include "OsgMainApp.hpp"
 #include "OsgMovieEventHandler.hpp"
+#include "fisheye_spherical.h"
+#include "m_warper.h"
 
 OsgMainApp::OsgMainApp(){
 
@@ -10,8 +12,8 @@ OsgMainApp::OsgMainApp(){
     _clean_scene = false;
     equ_display = false;
 
-    equMovieName = "/storage/sdcard0/equ2.mp4";
-    fisheyeMovieName = "/storage/sdcard0/equ2.mp4";
+    mMovie.filename = "/storage/sdcard0/equ2.mp4";
+    mMovie.type = 0;
 
 }
 OsgMainApp::~OsgMainApp(){
@@ -79,7 +81,9 @@ void OsgMainApp::movieSample(){
 
 	    //defind a new geode root node, a stateSet
 	    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-		osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
+	   // osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
+                    osg::ref_ptr<osg::PositionAttitudeTransform> patTrans = new osg::PositionAttitudeTransform();
+
 	    osg::StateSet* stateset = geode->getOrCreateStateSet();
 //	    stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 	    //define the top left point and bottom right point
@@ -89,7 +93,7 @@ void OsgMainApp::movieSample(){
 	    ///////////////////////////////////load the equiretangular image
 	    //设置纹理
 	   	// std::string filename("/storage/sdcard0/equ2.mp4");
-	    osg::Image* m_image = osgDB::readImageFile(equMovieName);
+	    osg::Image* m_image = osgDB::readImageFile(mMovie.filename);
 	    osg::ImageStream* m_imagestream = dynamic_cast<osg::ImageStream*>(m_image);
 	    //if there are audio contained in the image sequence
 	    if(m_imagestream){
@@ -119,20 +123,24 @@ void OsgMainApp::movieSample(){
 	    	bool useTextureRectangle = true;
 	    	bool xyPlane = false;
 	    	bool flip = true;
-	    	osg::ref_ptr<osg::Drawable> drawable = myCreateTexturedSphereGeometry(pos, width, height,m_image, useTextureRectangle, xyPlane, flip);
+	    	osg::ref_ptr<osg::Drawable> drawable = myCreateTexturedSphereByHandGeometry(pos, width, height,m_image, useTextureRectangle, xyPlane, flip);
 //	    	add SphpereDrawable to geode
 	    	geode->addDrawable(drawable.get());
 		    //set the bottom right pos
-		    bottomright = pos + osg::Vec3(width, height, 0.0f);
+                                bottomright = pos + osg::Vec3(width, height, 0.0f);
 
-		    if (xyPlane) pos.y() += height*1.05f;
-		                   else pos.z() += height*1.05f;
+                                if (xyPlane) pos.y() += height*1.05f;
+                                               else pos.z() += height*1.05f;
 
-			////////////////////////////////////rotate it by 90
-				const double angle = 135;
-				const osg::Vec3d axis(1, 0, 0);
-				transform->setMatrix(osg::Matrix::rotate(angle, axis));
-				transform->addChild(geode.get());
+		////////////////////////////////////rotate it by 90
+                               osg::Quat patRotate(osg::inDegrees(0.0), osg::Vec3(1, 0, 0), osg::inDegrees(90.0), osg::Vec3(0, 1, 0), osg::inDegrees(-90.0), osg::Vec3(0, 0, 1));
+                                const osg::Vec3 posit(0, 0, 0);
+                                patTrans->setPosition(posit);
+                                patTrans->setAttitude(patRotate);
+                                
+                                // transform->addChild(geode.get());
+
+                                patTrans->addChild(geode.get());
 	    }
 /////////////////////////////////////////////test code start
 /*
@@ -176,7 +184,7 @@ void OsgMainApp::movieSample(){
 
 				////////////////////////////////////rotate it by 90
 //				const double angle = 90;
-//				const osg::Vec3d axis(1, 0, 0);
+//				const osg::Vec3 axis(1, 0, 0);
 //				transform->setMatrix(osg::Matrix::rotate(angle, axis));
 //				transform->addChild(geode.get());
 
@@ -197,7 +205,7 @@ void OsgMainApp::movieSample(){
 
 		geode->getOrCreateStateSet()->setAttribute ( prog );
 		 //add geode to root
-		_root->addChild(transform.get());
+		_root->addChild(patTrans.get());
 
 
 	    osgViewer::Viewer::Windows windows;
@@ -220,9 +228,16 @@ void OsgMainApp::movieSample(){
 	    _viewer->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
 
 	    //first you need to close the manipulator
-//	    _viewer->setCameraManipulator(NULL);
+	    // _viewer->setCameraManipulator(NULL);
 	    //set the camera view matrix
-//	    _viewer->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0, -100, 0), osg::Vec3(0, 0, 0), osg::Vec3(0, 1, 0));
+	    // _viewer->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    _viewer->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    _viewer->home();
+
+                    // _manipulator = new osgGA::TerrainManipulator();
+
+                    // _viewer->setCameraManipulator(_manipulator.get());
+
 
 	    // pass the model to the MovieEventHandler so it can pick out ImageStream's to manipulate.
 	    MovieEventHandler* meh = new MovieEventHandler();
@@ -247,7 +262,7 @@ osg::ShapeDrawable* OsgMainApp::myCreateTexturedSphereGeometry(const osg::Vec3& 
     //add a sphere
     osg::TessellationHints* hints = new osg::TessellationHints;
     //set the rotate speed
-    hints->setDetailRatio(5.0f);
+    hints->setDetailRatio(15.0f);
     //create a new sphere
     osg::ShapeDrawable* sd = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0,0.0,0.0), osg::WGS_84_RADIUS_POLAR), hints);
     //set the texture for the sphere
@@ -264,6 +279,129 @@ osg::ShapeDrawable* OsgMainApp::myCreateTexturedSphereGeometry(const osg::Vec3& 
      return sd;
 
 }
+
+
+osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip)
+{
+    bool flip = image->getOrigin()==osg::Image::TOP_LEFT;
+    if (option_flip) flip = !flip;
+    //////////////////////////////////////////////////////////////////          fix  fisheye image
+    FisheyeSpherical projector;
+    projector.use_hfov_ = false;
+    projector.use_thoby_ = false;
+    projector.set_output_width(2048);
+    projector.set_camera_params(width, height, 220, false);
+
+    float test_focal = projector.get_focal_length();
+    __android_log_print(ANDROID_LOG_DEBUG, "LOG_TAG", "image_width_ : %d, image_height_ : %d, vfov_ : %f, scale_ : %f, focal_ : %f", projector.image_width_, projector.image_height_, projector.vfov_, projector.scale_, projector.focal_);
+    
+    // init warper
+    mWarper warper;
+    warper.set_projector(&projector);
+    warper.build_maps(width, height, false);
+    int map_cols, map_rows;
+    warper.get_map_size(map_cols, map_rows);
+
+    std::vector<std::vector<float> > xmap, ymap;
+    warper.get_maps(xmap, ymap);
+
+    __android_log_print(ANDROID_LOG_DEBUG, "LOG_TAG", "width : %f,  height : %f",width, height);
+
+    // for (int x = 0; x < map_cols; x++) {
+    //     int y = 100;
+    //     __android_log_print(ANDROID_LOG_DEBUG, "LOG_TAG", "%f, ",xmap[y][x]);
+    // }
+
+////////////////////////////////////////////    draw a sphere by hand
+    osg::Geometry* sg = new osg::Geometry;
+    osg::ref_ptr<osg::Vec3Array> sphereVertices = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> sphereNormals = new osg::Vec3Array; 
+    osg::ref_ptr<osg::Vec2Array> sphereTexCoors = new osg::Vec2Array;
+
+    unsigned int  rings;
+    unsigned int  sectors;
+    double  radius;
+    //create a 10*10 sphere
+    rings = 20;
+    sectors = 20;
+    radius = 25;
+
+
+    float const R = 1. / static_cast<float>(rings - 1);
+    float const S = 1. /static_cast<float>(sectors - 1);
+
+    for (unsigned int r = 0; r < rings; ++r){
+        for (unsigned int s = 0; s < sectors; ++s){
+            float const z = sin( -M_PI_2 + M_PI * r * R);
+            float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
+            float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
+
+            int u = std::min(s * S * map_cols, (float)map_cols - 1);
+            int v = std::min(r * R * map_rows, (float)map_rows - 1);
+
+            float src_x = (float)xmap[v][u] / (width - 1);
+            float src_y = (float)ymap[v][u] / (height - 1);
+
+            // __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID", "Initializing geometry");
+            // __android_log_print(ANDROID_LOG_DEBUG, "LOG_TAG", "src_x : %f,  src_y : %f",src_x, src_y);
+
+            if (src_x > 0 && src_y > 0) {
+                sphereTexCoors->push_back(osg::Vec2(src_x, src_y));
+            } else {
+                sphereTexCoors->push_back(osg::Vec2(0, 0));
+            }
+
+            sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
+            sphereNormals->push_back(osg::Vec3(x, y, z));
+        }
+    }
+
+    // for (unsigned int r = 0; r < rings; ++r){
+    //     for (unsigned int s = 0; s < sectors; ++s){
+    //         float const z = sin( -M_PI_2 + M_PI * r * R);
+    //         float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
+    //         float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
+
+    //         sphereTexCoors->push_back(osg::Vec2(s * S, r * R));
+    //         sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
+    //         sphereNormals->push_back(osg::Vec3(x, y, z));
+    //     }
+    // }
+
+    sg->setVertexArray(sphereVertices);
+    sg->setTexCoordArray(0, sphereTexCoors);
+
+    for (unsigned int r = 0; r < rings - 1; ++r){
+        for (unsigned int s = 0; s < sectors - 1 ; ++s){
+            osg::ref_ptr<osg::DrawElementsUInt> face = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 3);
+                //CCW order
+                face->push_back((r + 0) * sectors + (s + 0));
+                face->push_back((r + 0) * sectors + (s + 1));
+                face->push_back((r + 1) * sectors + (s + 1));
+                face->push_back((r + 0) * sectors + (s + 0));
+                face->push_back((r + 1) * sectors + (s + 1));
+                face->push_back((r + 1) * sectors + (s + 0));
+
+                sg->addPrimitiveSet(face);
+        }
+    }
+
+
+/////////////////////////////////////////////
+
+    osg::Texture2D* texture = new osg::Texture2D(image);
+    texture->setResizeNonPowerOfTwoHint(false);
+    texture->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
+    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+
+    sg->getOrCreateStateSet()->setTextureAttributeAndModes(0,
+                            texture,
+                            osg::StateAttribute::ON);
+
+     return sg;
+}
+
 void OsgMainApp::deleteModels(){
     if(_vModelsToDelete.size()==0) return;
 
@@ -311,7 +449,7 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     _viewer->addEventHandler(new osgGA::StateSetManipulator(_viewer->getCamera()->getOrCreateStateSet()));
     _viewer->addEventHandler(new osgViewer::ThreadingHandler);
     _viewer->addEventHandler(new osgViewer::LODScaleHandler);
-
+/*
     _manipulator = new osgGA::KeySwitchMatrixManipulator;
 
     _manipulator->addMatrixManipulator( '1', "Trackball", new osgGA::TrackballManipulator() );
@@ -321,6 +459,14 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     _manipulator->addMatrixManipulator( '5', "Orbit", new osgGA::OrbitManipulator() );
     _manipulator->addMatrixManipulator( '6', "FirstPerson", new osgGA::FirstPersonManipulator() );
     _manipulator->addMatrixManipulator( '7', "Spherical", new osgGA::SphericalManipulator() );
+*/
+
+    _manipulator = new osgGA::OrbitManipulator();
+    // // _manipulator = new osgGA::OrbitManipulator();
+    // // _manipulator->setTransformation(osg::Vec3(0, 0, -500), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    // osg::Matrixd* mat = new osg::Matrixd();
+    // mat->makeLookAt(osg::Vec3(0, 0,  -50), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    // _manipulator->setByMatrix(*mat);
 
     _viewer->setCameraManipulator( _manipulator.get() );
 
@@ -384,6 +530,17 @@ void OsgMainApp::loadObject(std::string name,std::string filePath){
     }
 
     _vModelsToLoad.push_back(newModel);
+}
+//load the equiretangular movie by the filename
+void OsgMainApp::loadMovie(std::string filename, int type){
+    mMovie.filename = filename;
+    mMovie.type = type;
+    equ_display = false;
+}
+//set the display flag to false
+void OsgMainApp::onMovieResume(){
+
+        equ_display = false;
 }
 void OsgMainApp::unLoadObject(int number){
     if(_vModels.size() <= number){

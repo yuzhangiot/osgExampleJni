@@ -22,6 +22,7 @@ extern "C" {
     JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_loadObject(JNIEnv * env, jobject obj, jstring address);
     JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_unLoadObject(JNIEnv * env, jobject obj, jint number);
     JNIEXPORT jobjectArray JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_getObjectNames(JNIEnv * env, jobject obj);
+    JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_loadMovie(JNIEnv * env, jobject obj, jstring address, jint type);
 };
 
 JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_init(JNIEnv * env, jobject obj, jint width, jint height){
@@ -92,6 +93,15 @@ JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_loadObject(
     //Release Strings to JNI
     env->ReleaseStringUTFChars(address, nativeAddress);
     env->ReleaseStringUTFChars(address, nativeName);
+}
+JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_loadMovie(JNIEnv * env, jobject obj, jstring address, jint type){
+    //Import Strings from JNI
+    const char *nativeAddress = env->GetStringUTFChars(address, JNI_FALSE);
+
+    mainApp.loadMovie(std::string(nativeAddress), type);
+
+    //Release Strings to JNI
+    env->ReleaseStringUTFChars(address, nativeAddress);
 }
 JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_unLoadObject(JNIEnv * env, jobject obj, jint number){
 

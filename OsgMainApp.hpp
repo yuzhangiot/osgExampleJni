@@ -68,6 +68,7 @@
 #include <osg/MatrixTransform>
 #include <osg/Camera>
 #include <osg/Vec3>
+#include <osg/PositionAttitudeTransform>
 
 #include <osgDB/FileUtils>
 #include <osgDB/fstream>
@@ -110,6 +111,12 @@ USE_SERIALIZER_WRAPPER_LIBRARY(osgVolume)
 struct Model{
     std::string filename;
     std::string name;
+};
+
+struct Movie
+{
+    std::string filename;
+    int type; // 0 = equiretangular, 1 = fisheye, 2 = cubic
 };
 
 static const char gVertexShader[] =
@@ -196,7 +203,10 @@ private:
     osg::ref_ptr<osgViewer::Viewer> _viewer;
     osg::ref_ptr<osg::Group> _root;
     osg::ref_ptr<osg::StateSet> _state;
-    osg::ref_ptr<osgGA::KeySwitchMatrixManipulator> _manipulator;
+    // osg::ref_ptr<osgGA::KeySwitchMatrixManipulator> _manipulator;
+    osg::ref_ptr<osgGA::OrbitManipulator> _manipulator;
+    // osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
+
 
     float _lodScale;
     unsigned int _prevFrame;
@@ -213,14 +223,14 @@ private:
     std::vector<Model> _vModelsToDelete;
 
     //define the equiretangular movie name
-    std::string equMovieName;
-    std::string fisheyeMovieName;
+    Movie mMovie;
 
     void loadModels();
     void deleteModels();
 
     void movieSample();
     osg::ShapeDrawable* myCreateTexturedSphereGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip);
+    osg::Geometry* myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip);
 
 public:
     OsgMainApp();
@@ -241,9 +251,13 @@ public:
     void loadObject(std::string name,std::string filePath);
     void unLoadObject(int number);
     void clearScene();
+    //Loading  movies
+    void loadMovie(std::string filePath, int type);
     //Other functions
     int  getNumberObjects();
     std::string getObjectName(int nunmber);
+    //set the movie display again
+    void onMovieResume();
 
     void setClearColor(osg::Vec4f color);
     osg::Vec4f getClearColor();
