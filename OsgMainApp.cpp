@@ -133,7 +133,7 @@ void OsgMainApp::movieSample(){
                                                else pos.z() += height*1.05f;
 
 		////////////////////////////////////rotate it by 90
-                               osg::Quat patRotate(osg::inDegrees(0.0), osg::Vec3(1, 0, 0), osg::inDegrees(90.0), osg::Vec3(0, 1, 0), osg::inDegrees(-90.0), osg::Vec3(0, 0, 1));
+                               osg::Quat patRotate(osg::Quat(osg::inDegrees(0.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 0.0, 1.0)));
                                 const osg::Vec3 posit(0, 0, 0);
                                 patTrans->setPosition(posit);
                                 patTrans->setAttitude(patRotate);
@@ -142,58 +142,6 @@ void OsgMainApp::movieSample(){
 
                                 patTrans->addChild(geode.get());
 	    }
-/////////////////////////////////////////////test code start
-/*
-	        //设置纹理
-	        std::string filename("/storage/sdcard0/equ.mp4");
-//	        osg::Texture2D* m_texture = new osg::Texture2D;
-//	        m_texture->setDataVariance(osg::Object::DYNAMIC);
-	        osg::Image* m_image = osgDB::readImageFile(filename);
-	        osg::ImageStream*m_imagestream = dynamic_cast<osg::ImageStream*>(m_image);
-	        if (m_imagestream)
-			{
-				osg::ImageStream::AudioStreams& audioStreams = m_imagestream->getAudioStreams();
-				if ( !audioStreams.empty())
-				{
-					osg::AudioStream* audioStream = audioStreams[0].get();
-					osg::notify(osg::NOTICE)<<"AudioStream read ["<<audioStream->getName()<<"]"<<std::endl;
-//#if USE_SDL || USE_SDL2
-//					if (numAudioStreamsEnabled==0)
-//					{
-//						audioStream->setAudioSink(new SDLAudioSink(audioStream));
-//
-//						++numAudioStreamsEnabled;
-//					}
-//#endif
-				}
-			}
-//	        m_texture->setImage(m_image);
-
-//	        osg::StateSet* m_stateset = new osg::StateSet;;
-//	        m_stateset->setTextureAttributeAndModes(0, m_texture, osg::StateAttribute::ON);
-//	        geode->setStateSet(m_stateset);
-
-		    //创建一个球体
-//	        if(m_image){
-//	        	osg::ref_ptr<osg::ShapeDrawable> sd = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0,0.0,0.0), osg::WGS_84_RADIUS_POLAR));
-
-
-
-				//添加到叶节点
-				geode->addDrawable(sd.get());
-
-				////////////////////////////////////rotate it by 90
-//				const double angle = 90;
-//				const osg::Vec3 axis(1, 0, 0);
-//				transform->setMatrix(osg::Matrix::rotate(angle, axis));
-//				transform->addChild(geode.get());
-
-
-
-//	        }
-
-*/
-////////////////////////////////////////////test code end
 
 		osg::Shader * vshader = new osg::Shader(osg::Shader::VERTEX, gVertexShaderfix );
 		osg::Shader * fshader = new osg::Shader(osg::Shader::FRAGMENT, gFragmentShaderfix );
@@ -216,9 +164,24 @@ void OsgMainApp::movieSample(){
 	      (*itr)->getState()->setUseVertexAttributeAliasing(true);
 	    }
 
+                    _manipulator->getNode();
+
+                    _viewerL->setSceneData(NULL);
+                    _viewerL->setSceneData(_root.get());
+
+                    _viewerL->getDatabasePager()->clear();
+                    _viewerL->getDatabasePager()->registerPagedLODs(_root.get());
+                    _viewerL->getDatabasePager()->setUpThreads(3, 1);
+                    _viewerL->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
+                    _viewerL->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
+
+                    _viewerL->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    _viewerL->home();
+
+/*
 	    _viewer->setSceneData(NULL);
 	    _viewer->setSceneData(_root.get());
-	    _manipulator->getNode();
+	    
 	    _viewer->home();
 
 	    _viewer->getDatabasePager()->clear();
@@ -230,20 +193,21 @@ void OsgMainApp::movieSample(){
 	    //first you need to close the manipulator
 	    // _viewer->setCameraManipulator(NULL);
 	    //set the camera view matrix
-	    // _viewer->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
                     _viewer->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
                     _viewer->home();
 
                     // _manipulator = new osgGA::TerrainManipulator();
 
                     // _viewer->setCameraManipulator(_manipulator.get());
-
-
+*/
+                    _viewerL->setCameraManipulator(_manipulator.get());
 	    // pass the model to the MovieEventHandler so it can pick out ImageStream's to manipulate.
 	    MovieEventHandler* meh = new MovieEventHandler();
 //			    meh->setMouseTracking( mouseTracking );
-	    meh->set( _viewer->getSceneData() );
-		_viewer->addEventHandler( meh );
+	 //    meh->set( _viewer->getSceneData() );
+		// _viewer->addEventHandler( meh );
+                    meh->set(_viewerL->getSceneData());
+                    _viewerL->addEventHandler(meh);
 
 	    _vModelsToLoad.clear();
 	    equ_display = true;
@@ -286,6 +250,7 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     bool flip = image->getOrigin()==osg::Image::TOP_LEFT;
     if (option_flip) flip = !flip;
     //////////////////////////////////////////////////////////////////          fix  fisheye image
+    /*
     FisheyeSpherical projector;
     projector.use_hfov_ = false;
     projector.use_thoby_ = false;
@@ -306,11 +271,7 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     warper.get_maps(xmap, ymap);
 
     __android_log_print(ANDROID_LOG_DEBUG, "LOG_TAG", "width : %f,  height : %f",width, height);
-
-    // for (int x = 0; x < map_cols; x++) {
-    //     int y = 100;
-    //     __android_log_print(ANDROID_LOG_DEBUG, "LOG_TAG", "%f, ",xmap[y][x]);
-    // }
+    */
 
 ////////////////////////////////////////////    draw a sphere by hand
     osg::Geometry* sg = new osg::Geometry;
@@ -324,7 +285,7 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     //create a 10*10 sphere
     rings = 20;
     sectors = 20;
-    radius = 25;
+    radius = 100;
 
 
     float const R = 1. / static_cast<float>(rings - 1);
@@ -335,7 +296,7 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
             float const z = sin( -M_PI_2 + M_PI * r * R);
             float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
             float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
-
+/*  warp texture uv from fish eye to equ
             int u = std::min(s * S * map_cols, (float)map_cols - 1);
             int v = std::min(r * R * map_rows, (float)map_rows - 1);
 
@@ -350,23 +311,23 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
             } else {
                 sphereTexCoors->push_back(osg::Vec2(0, 0));
             }
-
+*/
             sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
             sphereNormals->push_back(osg::Vec3(x, y, z));
         }
     }
 
-    // for (unsigned int r = 0; r < rings; ++r){
-    //     for (unsigned int s = 0; s < sectors; ++s){
-    //         float const z = sin( -M_PI_2 + M_PI * r * R);
-    //         float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
-    //         float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
+    for (unsigned int r = 0; r < rings; ++r){
+        for (unsigned int s = 0; s < sectors; ++s){
+            float const z = sin( -M_PI_2 + M_PI * r * R);
+            float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
+            float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
 
-    //         sphereTexCoors->push_back(osg::Vec2(s * S, r * R));
-    //         sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
-    //         sphereNormals->push_back(osg::Vec3(x, y, z));
-    //     }
-    // }
+            sphereTexCoors->push_back(osg::Vec2(s * S, r * R));
+            sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
+            sphereNormals->push_back(osg::Vec3(x, y, z));
+        }
+    }
 
     sg->setVertexArray(sphereVertices);
     sg->setTexCoordArray(0, sphereTexCoors);
@@ -437,11 +398,72 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
 
     osg::notify(osg::ALWAYS)<<"Testing"<<std::endl;
 
+    //judge if the  multiViewer is empty, if not return
+    _viewerMulti = new osgViewer::CompositeViewer();
+    if (_viewerMulti->getNumViews() != 0) return;
+    /* window system interface error on  Android
+    //get the window system interface
+    osg::GraphicsContext::WindowingSystemInterface *wsi = osg::GraphicsContext::getWindowingSystemInterface();
+    if (!wsi)
+    {
+       __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
+            "Error, no Window system interface available");
+       return;
+    }
+    //get the size of the screen
+    // unsigned int s_width, s_height;
+    // wsi->getScreenResolution(osg::GraphicsContext::ScreenIdentifier(0), s_width, s_height);
+    */
+    //define a new trait
+    osg::ref_ptr<osg::GraphicsContext::Traits> s_trait = new osg::GraphicsContext::Traits;
+    s_trait->x = 100;
+    s_trait->y = 100;
+    s_trait->width = 1000;
+    s_trait->height = 800;
+    s_trait->windowDecoration = true;
+    s_trait->doubleBuffer = true;
+    s_trait->sharedContext = 0;
+    //create a graphics context
+    osg::ref_ptr<osg::GraphicsContext> gc =  osg::GraphicsContext::createGraphicsContext(s_trait.get());
+    if (gc.valid()){
+        __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID", 
+                "Graphics Context has been successful created!");
+        gc->setClearColor(osg::Vec4f(0.2f, 0.2f, 0.6f, 1.0f));
+        gc->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+    else{
+        __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
+                "Graphics context created failed");
+    }
+    //view left start
+    _viewerL = new osgViewer::View;
+    _viewerL->setName("view left");
+    _viewerMulti->addView(_viewerL);
+
+    _viewerL->getCamera()->setName("Cam one");
+    _viewerL->getCamera()->setViewport(new osg::Viewport(0, 0, s_trait->width/2, s_trait->height));
+    _viewerL->getCamera()->setGraphicsContext(gc.get());
+
+    _viewerL->addEventHandler(new osgViewer::StatsHandler);
+    _viewerL->addEventHandler(new osgGA::StateSetManipulator(_viewerL->getCamera()->getOrCreateStateSet()));
+    _viewerL->addEventHandler(new osgViewer::ThreadingHandler);
+    _viewerL->addEventHandler(new osgViewer::LODScaleHandler);
+    //view left end
+
+    _root = new osg::Group();
+
+    _viewerL->setUpViewerAsEmbeddedInWindow(x, y, width/2, height);
+    _viewerMulti->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
+
+    _viewerMulti->realize();
+
+
+/* single
     _viewer = new osgViewer::Viewer();
     _viewer->setUpViewerAsEmbeddedInWindow(x, y, width, height);
     _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
 
-    _root = new osg::Group();
+
 
     _viewer->realize();
 
@@ -449,6 +471,7 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     _viewer->addEventHandler(new osgGA::StateSetManipulator(_viewer->getCamera()->getOrCreateStateSet()));
     _viewer->addEventHandler(new osgViewer::ThreadingHandler);
     _viewer->addEventHandler(new osgViewer::LODScaleHandler);
+*/
 /*
     _manipulator = new osgGA::KeySwitchMatrixManipulator;
 
@@ -461,16 +484,16 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     _manipulator->addMatrixManipulator( '7', "Spherical", new osgGA::SphericalManipulator() );
 */
 
-    _manipulator = new osgGA::OrbitManipulator();
-    // // _manipulator = new osgGA::OrbitManipulator();
+    _manipulator = new osgGA::SphericalManipulator();
     // // _manipulator->setTransformation(osg::Vec3(0, 0, -500), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
     // osg::Matrixd* mat = new osg::Matrixd();
     // mat->makeLookAt(osg::Vec3(0, 0,  -50), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
     // _manipulator->setByMatrix(*mat);
+    _viewerL->setCameraManipulator(_manipulator.get());
+    // _viewer->setCameraManipulator( _manipulator.get() );
 
-    _viewer->setCameraManipulator( _manipulator.get() );
-
-    _viewer->getViewerStats()->collectStats("scene", true);
+    _viewerMulti->getViewerStats()->collectStats("scene", true);
+    // _viewer->getViewerStats()->collectStats("scene", true);
 
     _initialized = true;
 
@@ -483,23 +506,29 @@ void OsgMainApp::draw(){
 	movieSample();
     //deleteModels();
 
-    _viewer->frame();
+    // _viewer->frame();
+    _viewerMulti->frame();
 }
 //Events
 void OsgMainApp::mouseButtonPressEvent(float x,float y,int button){
-    _viewer->getEventQueue()->mouseButtonPress(x, y, button);
+    _viewerL->getEventQueue()->mouseButtonPress(x, y, button);
+    // _viewer->getEventQueue()->mouseButtonPress(x, y, button);
 }
 void OsgMainApp::mouseButtonReleaseEvent(float x,float y,int button){
-    _viewer->getEventQueue()->mouseButtonRelease(x, y, button);
+    _viewerL->getEventQueue()->mouseButtonRelease(x, y, button);
+    // _viewer->getEventQueue()->mouseButtonRelease(x, y, button);
 }
 void OsgMainApp::mouseMoveEvent(float x,float y){
-    _viewer->getEventQueue()->mouseMotion(x, y);
+    _viewerL->getEventQueue()->mouseMotion(x, y);
+    // _viewer->getEventQueue()->mouseMotion(x, y);
 }
 void OsgMainApp::keyboardDown(int key){
-    _viewer->getEventQueue()->keyPress(key);
+    _viewerL->getEventQueue()->keyPress(key);
+    // _viewer->getEventQueue()->keyPress(key);
 }
 void OsgMainApp::keyboardUp(int key){
-    _viewer->getEventQueue()->keyRelease(key);
+    _viewerL->getEventQueue()->keyRelease(key);
+    // _viewer->getEventQueue()->keyRelease(key);
 }
 //Loading and unloading
 void OsgMainApp::loadObject(std::string filePath){
@@ -565,9 +594,11 @@ std::string OsgMainApp::getObjectName(int number){
 }
 void OsgMainApp::setClearColor(osg::Vec4f color){
     osg::notify(osg::ALWAYS)<<"Setting Clear Color"<<std::endl;
-    _viewer->getCamera()->setClearColor(color);
+    _viewerL->getCamera()->setClearColor(color);
+    // _viewer->getCamera()->setClearColor(color);
 }
 osg::Vec4f OsgMainApp::getClearColor(){
     osg::notify(osg::ALWAYS)<<"Getting Clear Color"<<std::endl;
-    return _viewer->getCamera()->getClearColor();
+    return _viewerL->getCamera()->getClearColor();
+    // return _viewer->getCamera()->getClearColor();
 }

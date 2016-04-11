@@ -34,6 +34,7 @@
 #include <osgDB/WriteFile>
 //osg_viewer
 #include <osgViewer/Viewer>
+ #include <osgViewer/CompositeViewer>
 #include <osgViewer/Renderer>
 #include <osgViewer/ViewerEventHandlers>
 //osgGA
@@ -200,11 +201,16 @@ static const char shaderSourceTextureRec[] =
 
 class OsgMainApp{
 private:
+    //define the composite viewer
+    osg::ref_ptr<osgViewer::CompositeViewer> _viewerMulti;
+    //define the left and right viewers
     osg::ref_ptr<osgViewer::Viewer> _viewer;
+    osg::ref_ptr<osgViewer::View> _viewerL;
+    osg::ref_ptr<osgViewer::View> _viewerR;
     osg::ref_ptr<osg::Group> _root;
     osg::ref_ptr<osg::StateSet> _state;
-    // osg::ref_ptr<osgGA::KeySwitchMatrixManipulator> _manipulator;
-    osg::ref_ptr<osgGA::OrbitManipulator> _manipulator;
+    osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
+    // osg::ref_ptr<osgGA::OrbitManipulator> _manipulator;
     // osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
 
 
