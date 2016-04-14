@@ -19,60 +19,6 @@ OsgMainApp::OsgMainApp(){
 OsgMainApp::~OsgMainApp(){
 
 }
-void OsgMainApp::loadModels(){
-    if(_vModelsToLoad.size()==0) return;
-
-    osg::notify(osg::ALWAYS)<<"There are "<<_vModelsToLoad.size()<<" models to load"<<std::endl;
-
-    Model newModel;
-    for(unsigned int i=0; i<_vModelsToLoad.size(); i++){
-        newModel = _vModelsToLoad[i];
-        osg::notify(osg::ALWAYS)<<"Loading: "<<newModel.filename<<std::endl;
-
-        osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFile(newModel.filename);
-        if (loadedModel == 0) {
-            osg::notify(osg::ALWAYS)<<"Model not loaded"<<std::endl;
-        } else {
-            osg::notify(osg::ALWAYS)<<"Model loaded"<<std::endl;
-            _vModels.push_back(newModel);
-
-            loadedModel->setName(newModel.name);
-
-            osg::Shader * vshader = new osg::Shader(osg::Shader::VERTEX, gVertexShaderfix );
-            osg::Shader * fshader = new osg::Shader(osg::Shader::FRAGMENT, gFragmentShaderfix );
-
-            osg::Program * prog = new osg::Program;
-            prog->addShader ( vshader );
-            prog->addShader ( fshader );
-
-            loadedModel->getOrCreateStateSet()->setAttribute ( prog );
-
-            _root->addChild(loadedModel);
-        }
-    }
-
-    osgViewer::Viewer::Windows windows;
-    _viewer->getWindows(windows);
-    for(osgViewer::Viewer::Windows::iterator itr = windows.begin();itr != windows.end();++itr)
-    {
-      (*itr)->getState()->setUseModelViewAndProjectionUniforms(true);
-      (*itr)->getState()->setUseVertexAttributeAliasing(true);
-    }
-
-    _viewer->setSceneData(NULL);
-    _viewer->setSceneData(_root.get());
-    _manipulator->getNode();
-    _viewer->home();
-
-    _viewer->getDatabasePager()->clear();
-    _viewer->getDatabasePager()->registerPagedLODs(_root.get());
-    _viewer->getDatabasePager()->setUpThreads(3, 1);
-    _viewer->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
-    _viewer->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
-
-    _vModelsToLoad.clear();
-
-}
 void OsgMainApp::movieSample(){
             	//If the equ sphere has already displayed, then doing nothing
             	if(equ_display == true) return;
@@ -157,7 +103,7 @@ void OsgMainApp::movieSample(){
 
 
 	    osgViewer::Viewer::Windows windows;
-	    _viewer->getWindows(windows);
+	    _viewerMulti->getWindows(windows);
 	    for(osgViewer::Viewer::Windows::iterator itr = windows.begin();itr != windows.end();++itr)
 	    {
 	      (*itr)->getState()->setUseModelViewAndProjectionUniforms(true);
@@ -165,7 +111,7 @@ void OsgMainApp::movieSample(){
 	    }
 
                     _manipulator->getNode();
-
+                    //left view start
                     _viewerL->setSceneData(NULL);
                     _viewerL->setSceneData(_root.get());
 
@@ -177,6 +123,21 @@ void OsgMainApp::movieSample(){
 
                     _viewerL->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
                     _viewerL->home();
+                    //left view end
+
+                    //right view start
+                    _viewerR->setSceneData(NULL);
+                    _viewerR->setSceneData(_root.get());
+
+                    _viewerR->getDatabasePager()->clear();
+                    _viewerR->getDatabasePager()->registerPagedLODs(_root.get());
+                    _viewerR->getDatabasePager()->setUpThreads(3, 1);
+                    _viewerR->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
+                    _viewerR->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
+
+                    _viewerR->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    _viewerR->home();
+                    //right view end
 
 /*
 	    _viewer->setSceneData(NULL);
@@ -201,13 +162,18 @@ void OsgMainApp::movieSample(){
                     // _viewer->setCameraManipulator(_manipulator.get());
 */
                     _viewerL->setCameraManipulator(_manipulator.get());
+                    _viewerR->setCameraManipulator(_manipulator.get());
 	    // pass the model to the MovieEventHandler so it can pick out ImageStream's to manipulate.
-	    MovieEventHandler* meh = new MovieEventHandler();
+	    MovieEventHandler* mehL = new MovieEventHandler();
 //			    meh->setMouseTracking( mouseTracking );
 	 //    meh->set( _viewer->getSceneData() );
 		// _viewer->addEventHandler( meh );
-                    meh->set(_viewerL->getSceneData());
-                    _viewerL->addEventHandler(meh);
+                    mehL->set(_viewerL->getSceneData());
+                    _viewerL->addEventHandler(mehL);
+
+                    MovieEventHandler* mehR = new MovieEventHandler();
+                    mehR->set(_viewerR->getSceneData());
+                    _viewerR->addEventHandler(mehR);
 
 	    _vModelsToLoad.clear();
 	    equ_display = true;
@@ -401,58 +367,49 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     //judge if the  multiViewer is empty, if not return
     _viewerMulti = new osgViewer::CompositeViewer();
     if (_viewerMulti->getNumViews() != 0) return;
-    /* window system interface error on  Android
-    //get the window system interface
-    osg::GraphicsContext::WindowingSystemInterface *wsi = osg::GraphicsContext::getWindowingSystemInterface();
-    if (!wsi)
-    {
-       __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
-            "Error, no Window system interface available");
-       return;
-    }
-    //get the size of the screen
-    // unsigned int s_width, s_height;
-    // wsi->getScreenResolution(osg::GraphicsContext::ScreenIdentifier(0), s_width, s_height);
-    */
-    //define a new trait
-    osg::ref_ptr<osg::GraphicsContext::Traits> s_trait = new osg::GraphicsContext::Traits;
-    s_trait->x = 100;
-    s_trait->y = 100;
-    s_trait->width = 1000;
-    s_trait->height = 800;
-    s_trait->windowDecoration = true;
-    s_trait->doubleBuffer = true;
-    s_trait->sharedContext = 0;
-    //create a graphics context
-    osg::ref_ptr<osg::GraphicsContext> gc =  osg::GraphicsContext::createGraphicsContext(s_trait.get());
-    if (gc.valid()){
-        __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID", 
-                "Graphics Context has been successful created!");
-        gc->setClearColor(osg::Vec4f(0.2f, 0.2f, 0.6f, 1.0f));
-        gc->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-    else{
-        __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
-                "Graphics context created failed");
-    }
+
     //view left start
     _viewerL = new osgViewer::View;
     _viewerL->setName("view left");
     _viewerMulti->addView(_viewerL);
 
-    _viewerL->getCamera()->setName("Cam one");
-    _viewerL->getCamera()->setViewport(new osg::Viewport(0, 0, s_trait->width/2, s_trait->height));
-    _viewerL->getCamera()->setGraphicsContext(gc.get());
+    _viewerL->getCamera()->setName("Cam left");
+    _viewerL->getCamera()->setViewport(new osg::Viewport(0, 0, width/2, height));
 
     _viewerL->addEventHandler(new osgViewer::StatsHandler);
     _viewerL->addEventHandler(new osgGA::StateSetManipulator(_viewerL->getCamera()->getOrCreateStateSet()));
     _viewerL->addEventHandler(new osgViewer::ThreadingHandler);
     _viewerL->addEventHandler(new osgViewer::LODScaleHandler);
+    __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
+            "add event handler successful!");
     //view left end
 
-    _root = new osg::Group();
+    //view right start
+    _viewerR = new osgViewer::View;
+    _viewerR->setName("view right");
+    _viewerMulti->addView(_viewerR);
 
-    _viewerL->setUpViewerAsEmbeddedInWindow(x, y, width/2, height);
+    _viewerR->getCamera()->setName("Cam right");
+    _viewerR->getCamera()->setViewport(new osg::Viewport(width/2, 0, width/2, height));
+
+    _viewerR->addEventHandler(new osgViewer::StatsHandler);
+    _viewerR->addEventHandler(new osgGA::StateSetManipulator(_viewerR->getCamera()->getOrCreateStateSet()));
+    _viewerR->addEventHandler(new osgViewer::ThreadingHandler);
+    _viewerR->addEventHandler(new osgViewer::LODScaleHandler);
+    //view right end
+
+    _root = new osg::Group();
+    //set up two embeded windows
+     _gweL = new osgViewer::GraphicsWindowEmbedded(x, y, width/2, height);
+     _gweR = new osgViewer::GraphicsWindowEmbedded(x + width / 2, y, width / 2, height);
+     __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
+            "Graphics embeded windows build successful!");
+    //bind gwe to camera and then to viewer
+    _viewerL->getCamera()->setGraphicsContext(_gweL.get());
+    _viewerR->getCamera()->setGraphicsContext(_gweR.get());
+    __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
+            "viewer set GCE windows successful!");
+
     _viewerMulti->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
 
     _viewerMulti->realize();
@@ -490,12 +447,30 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     // mat->makeLookAt(osg::Vec3(0, 0,  -50), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
     // _manipulator->setByMatrix(*mat);
     _viewerL->setCameraManipulator(_manipulator.get());
+    _viewerR->setCameraManipulator(_manipulator.get());
     // _viewer->setCameraManipulator( _manipulator.get() );
 
     _viewerMulti->getViewerStats()->collectStats("scene", true);
     // _viewer->getViewerStats()->collectStats("scene", true);
 
     _initialized = true;
+
+}
+//change camera view matrix
+void OsgMainApp::changeCamViewQuat(float x, float y, float z, float w){
+    //create a quat
+    osg::Quat camViewQuat(x, y, z, w);
+    //init a matrix with a quat
+    osg::Matrixf camViewMatrix(camViewQuat);
+    // _viewerL->getCamera()->getViewMatrix().setRotate(camViewQuat);
+    // _viewerR->getCamera()->getViewMatrix().setRotate(camViewQuat);
+    //set this matrix to the camera
+    // osg::notify(osg::ALWAYS)<<"The x, y, z, w of the quat are"<<x<<",  "<<y<<",  "<<z<<",  "<<w<<std::endl;
+    // osg::Quat currentQuat;
+    // osg::Matrixd currentMatrix = _viewerL->getCamera()->getViewMatrix();
+    // currentQuat = currentMatrix.getRotate();
+    // osg::notify(osg::ALWAYS)<<"The x, y, z, w of the current quat are"<<currentQuat._v[0]<<", "<<currentQuat._v[1]<<", "<<currentQuat._v[2]<<", "<<currentQuat._v[3]<<std::endl;
+    _viewerL->getCameraManipulator()->setByMatrix(camViewMatrix);
 
 }
 //Draw
@@ -512,22 +487,27 @@ void OsgMainApp::draw(){
 //Events
 void OsgMainApp::mouseButtonPressEvent(float x,float y,int button){
     _viewerL->getEventQueue()->mouseButtonPress(x, y, button);
+    _viewerR->getEventQueue()->mouseButtonPress(x, y, button);
     // _viewer->getEventQueue()->mouseButtonPress(x, y, button);
 }
 void OsgMainApp::mouseButtonReleaseEvent(float x,float y,int button){
     _viewerL->getEventQueue()->mouseButtonRelease(x, y, button);
+     _viewerR->getEventQueue()->mouseButtonRelease(x, y, button);
     // _viewer->getEventQueue()->mouseButtonRelease(x, y, button);
 }
 void OsgMainApp::mouseMoveEvent(float x,float y){
     _viewerL->getEventQueue()->mouseMotion(x, y);
+    _viewerR->getEventQueue()->mouseMotion(x, y);
     // _viewer->getEventQueue()->mouseMotion(x, y);
 }
 void OsgMainApp::keyboardDown(int key){
     _viewerL->getEventQueue()->keyPress(key);
+    _viewerR->getEventQueue()->keyPress(key);
     // _viewer->getEventQueue()->keyPress(key);
 }
 void OsgMainApp::keyboardUp(int key){
     _viewerL->getEventQueue()->keyRelease(key);
+    _viewerR->getEventQueue()->keyRelease(key);
     // _viewer->getEventQueue()->keyRelease(key);
 }
 //Loading and unloading
@@ -595,6 +575,7 @@ std::string OsgMainApp::getObjectName(int number){
 void OsgMainApp::setClearColor(osg::Vec4f color){
     osg::notify(osg::ALWAYS)<<"Setting Clear Color"<<std::endl;
     _viewerL->getCamera()->setClearColor(color);
+    _viewerR->getCamera()->setClearColor(color);
     // _viewer->getCamera()->setClearColor(color);
 }
 osg::Vec4f OsgMainApp::getClearColor(){

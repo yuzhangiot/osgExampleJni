@@ -18,7 +18,7 @@ endif
 ### Add all source file names to be included in lib separated by a whitespace
 
 LOCAL_C_INCLUDES:= $(OSG_ANDROID_DIR)/include /home/joseph/osg/osg-android/include /home/joseph/osg/osg-android/3rdparty/libpng
-LOCAL_CFLAGS    := -Werror -fno-short-enums
+LOCAL_CFLAGS    := -Werror -fno-short-enums -fPIC
 LOCAL_CPPFLAGS  := -DOSG_LIBRARY_STATIC 
 
  LOCAL_WHOLE_STATIC_LIBRARIES :=$(OSG_3RDPARTY_COMPONENTS)

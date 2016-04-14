@@ -204,9 +204,10 @@ private:
     //define the composite viewer
     osg::ref_ptr<osgViewer::CompositeViewer> _viewerMulti;
     //define the left and right viewers
-    osg::ref_ptr<osgViewer::Viewer> _viewer;
     osg::ref_ptr<osgViewer::View> _viewerL;
     osg::ref_ptr<osgViewer::View> _viewerR;
+    osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> _gweL;
+    osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> _gweR;
     osg::ref_ptr<osg::Group> _root;
     osg::ref_ptr<osg::StateSet> _state;
     osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
@@ -231,7 +232,6 @@ private:
     //define the equiretangular movie name
     Movie mMovie;
 
-    void loadModels();
     void deleteModels();
 
     void movieSample();
@@ -264,6 +264,7 @@ public:
     std::string getObjectName(int nunmber);
     //set the movie display again
     void onMovieResume();
+    void changeCamViewQuat(float x, float y, float z, float w);
 
     void setClearColor(osg::Vec4f color);
     osg::Vec4f getClearColor();
