@@ -231,7 +231,7 @@ void OsgMainApp::movieSample(){
 	    // _viewer->setCameraManipulator(NULL);
 	    //set the camera view matrix
 	    // _viewer->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-                    _viewer->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    _viewer->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, - 90), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
                     _viewer->home();
 
                     // _manipulator = new osgGA::TerrainManipulator();
@@ -322,9 +322,9 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     unsigned int  sectors;
     double  radius;
     //create a 10*10 sphere
-    rings = 20;
-    sectors = 20;
-    radius = 25;
+    rings = 40;
+    sectors = 40;
+    radius = 100;
 
 
     float const R = 1. / static_cast<float>(rings - 1);

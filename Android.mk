@@ -34,7 +34,7 @@ LOCAL_LDLIBS 	 += -L $(LIBDIR) \
 -lavutil \
 -lswscale \
 -lswresample
-LOCAL_SRC_FILES := osgNativeLib.cpp OsgMainApp.cpp OsgAndroidNotifyHandler.cpp OsgMovieEventHandler.cpp m_remap.cpp m_warper.cpp fisheye_spherical.cpp projector.cpp
+LOCAL_SRC_FILES := wcmapp3osgNativeLib.cpp OsgMainApp.cpp OsgAndroidNotifyHandler.cpp OsgMovieEventHandler.cpp m_remap.cpp m_warper.cpp fisheye_spherical.cpp projector.cpp
 LOCAL_LDFLAGS   := -L $(LIBDIR) \
 -L$(OSG_3RDPARTY_DIR) \
 -losgdb_dds \
