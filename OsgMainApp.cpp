@@ -79,7 +79,8 @@ void OsgMainApp::movieSample(){
                                                else pos.z() += height*1.05f;
 
 		////////////////////////////////////rotate it by 90
-                               osg::Quat patRotate(osg::Quat(osg::inDegrees(0.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 0.0, 1.0)));
+                               // osg::Quat patRotate(osg::Quat(osg::inDegrees(0.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 0.0, 1.0)));
+                                osg::Quat patRotate(osg::Quat(osg::inDegrees(180.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 0.0, 1.0)));
                                 const osg::Vec3 posit(0, 0, 0);
                                 patTrans->setPosition(posit);
                                 patTrans->setAttitude(patRotate);
@@ -121,8 +122,14 @@ void OsgMainApp::movieSample(){
                     _viewerL->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
                     _viewerL->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
 
-                    _viewerL->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                     // first you need to close the manipulator
+                    _viewerL->setCameraManipulator(NULL);
+                    // set the camera view matrix
+                    _viewerL->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
                     _viewerL->home();
+
+                    // _viewerL->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    // _viewerL->home();
                     //left view end
 
                     //right view start
@@ -135,8 +142,14 @@ void OsgMainApp::movieSample(){
                     _viewerR->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
                     _viewerR->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
 
-                    _viewerR->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                     // first you need to close the manipulator
+                    _viewerR->setCameraManipulator(NULL);
+                    // set the camera view matrix
+                    _viewerR->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
                     _viewerR->home();
+
+                    // _viewerR->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+                    // _viewerR->home();
                     //right view end
 
 /*
@@ -161,8 +174,9 @@ void OsgMainApp::movieSample(){
 
                     // _viewer->setCameraManipulator(_manipulator.get());
 */
-                    _viewerL->setCameraManipulator(_manipulator.get());
-                    _viewerR->setCameraManipulator(_manipulator.get());
+                    // _viewerL->setCameraManipulator(_manipulator.get());
+                    // _viewerR->setCameraManipulator(_manipulator.get());
+
 	    // pass the model to the MovieEventHandler so it can pick out ImageStream's to manipulate.
 	    MovieEventHandler* mehL = new MovieEventHandler();
 //			    meh->setMouseTracking( mouseTracking );
@@ -442,12 +456,9 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
 */
 
     _manipulator = new osgGA::SphericalManipulator();
-    // // _manipulator->setTransformation(osg::Vec3(0, 0, -500), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-    // osg::Matrixd* mat = new osg::Matrixd();
-    // mat->makeLookAt(osg::Vec3(0, 0,  -50), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-    // _manipulator->setByMatrix(*mat);
-    _viewerL->setCameraManipulator(_manipulator.get());
-    _viewerR->setCameraManipulator(_manipulator.get());
+
+    // _viewerL->setCameraManipulator(_manipulator.get());
+    // _viewerR->setCameraManipulator(_manipulator.get());
     // _viewer->setCameraManipulator( _manipulator.get() );
 
     _viewerMulti->getViewerStats()->collectStats("scene", true);
@@ -461,16 +472,18 @@ void OsgMainApp::changeCamViewQuat(float x, float y, float z, float w){
     //create a quat
     osg::Quat camViewQuat(x, y, z, w);
     //init a matrix with a quat
-    osg::Matrixf camViewMatrix(camViewQuat);
-    // _viewerL->getCamera()->getViewMatrix().setRotate(camViewQuat);
-    // _viewerR->getCamera()->getViewMatrix().setRotate(camViewQuat);
+    // osg::Matrixf camViewMatrix;
+    // camViewMatrix.setRotate(camViewQuat);
+    _viewerL->getCamera()->getViewMatrix().makeRotate(camViewQuat);
+    _viewerR->getCamera()->getViewMatrix().makeRotate(camViewQuat);
     //set this matrix to the camera
     // osg::notify(osg::ALWAYS)<<"The x, y, z, w of the quat are"<<x<<",  "<<y<<",  "<<z<<",  "<<w<<std::endl;
     // osg::Quat currentQuat;
     // osg::Matrixd currentMatrix = _viewerL->getCamera()->getViewMatrix();
     // currentQuat = currentMatrix.getRotate();
     // osg::notify(osg::ALWAYS)<<"The x, y, z, w of the current quat are"<<currentQuat._v[0]<<", "<<currentQuat._v[1]<<", "<<currentQuat._v[2]<<", "<<currentQuat._v[3]<<std::endl;
-    _viewerL->getCameraManipulator()->setByMatrix(camViewMatrix);
+
+    // _viewerL->getCameraManipulator()->setByMatrix(camViewMatrix);
 
 }
 //Draw
@@ -548,8 +561,10 @@ void OsgMainApp::loadMovie(std::string filename, int type){
 }
 //set the display flag to false
 void OsgMainApp::onMovieResume(){
-
-        equ_display = false;
+    osg::Quat m_rotate;
+    m_rotate = _viewerL->getCameraManipulator()->getMatrix().getRotate();
+    osg::notify(osg::ALWAYS)<<"The x, y, z, w of the current quat are"<<m_rotate._v[0]<<", "<<m_rotate._v[1]<<", "<<m_rotate._v[2]<<", "<<m_rotate._v[3]<<std::endl;
+        // equ_display = false;
 }
 void OsgMainApp::unLoadObject(int number){
     if(_vModels.size() <= number){

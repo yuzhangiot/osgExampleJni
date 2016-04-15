@@ -24,7 +24,7 @@ extern "C" {
     JNIEXPORT jobjectArray JNICALL Java_osg_AndroidExample_osgNativeLib_getObjectNames(JNIEnv * env, jobject obj);
     JNIEXPORT void JNICALL Java_osg_AndroidExample_osgNativeLib_loadMovie(JNIEnv * env, jobject obj, jstring address, jint type);
     JNIEXPORT void JNICALL Java_osg_AndroidExample_osgNativeLib_changeCamViewQuat(JNIEnv * env, jobject obj, jfloat x, jfloat y, jfloat z, jfloat w);
-    JNIEXPORT void JNICALL Java_com_icatch_wcmapp3_Activity_osgNativeLib_onMovieResume(JNIEnv * env, jobject obj);
+    JNIEXPORT void JNICALL Java_osg_AndroidExample_osgNativeLib_onMovieResume(JNIEnv * env, jobject obj);
 };
 
 JNIEXPORT void JNICALL Java_osg_AndroidExample_osgNativeLib_init(JNIEnv * env, jobject obj, jint width, jint height){

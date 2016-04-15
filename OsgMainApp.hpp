@@ -212,7 +212,6 @@ private:
     osg::ref_ptr<osg::StateSet> _state;
     osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
     // osg::ref_ptr<osgGA::OrbitManipulator> _manipulator;
-    // osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
 
 
     float _lodScale;
