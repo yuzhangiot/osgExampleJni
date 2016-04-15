@@ -208,7 +208,8 @@ private:
     osg::ref_ptr<osgViewer::View> _viewerR;
     osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> _gweL;
     osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> _gweR;
-    osg::ref_ptr<osg::Group> _root;
+    osg::ref_ptr<osg::Group> _rootL;
+    osg::ref_ptr<osg::Group> _rootR;
     osg::ref_ptr<osg::StateSet> _state;
     osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
     // osg::ref_ptr<osgGA::OrbitManipulator> _manipulator;
@@ -235,7 +236,7 @@ private:
 
     void movieSample();
     osg::ShapeDrawable* myCreateTexturedSphereGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip);
-    osg::Geometry* myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip);
+    osg::Geometry* myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool isLefteye, bool xyPlane, bool option_flip);
 
 public:
     OsgMainApp();

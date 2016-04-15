@@ -20,177 +20,185 @@ OsgMainApp::~OsgMainApp(){
 
 }
 void OsgMainApp::movieSample(){
-            	//If the equ sphere has already displayed, then doing nothing
-            	if(equ_display == true) return;
+    //If the equ sphere has already displayed, then doing nothing
+    if(equ_display == true) return;
 
-	    osg::notify(osg::ALWAYS)<<"Start to display sphere"<<std::endl;
+    osg::notify(osg::ALWAYS)<<"Start to display sphere"<<std::endl;
 
-	    //defind a new geode root node, a stateSet
-	    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-	   // osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
-                    osg::ref_ptr<osg::PositionAttitudeTransform> patTrans = new osg::PositionAttitudeTransform();
+    //defind a new geode root node, a stateSet of both eyes
+    osg::ref_ptr<osg::Geode> geodeL = new osg::Geode;
+    osg::ref_ptr<osg::Geode> geodeR = new osg::Geode;
+    // osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
+    osg::ref_ptr<osg::PositionAttitudeTransform> patTransL = new osg::PositionAttitudeTransform();
+    osg::ref_ptr<osg::PositionAttitudeTransform> patTransR = new osg::PositionAttitudeTransform();
+    osg::StateSet* statesetL = geodeL->getOrCreateStateSet();
+    osg::StateSet* statesetR = geodeR->getOrCreateStateSet();
+    //	    stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    //define the top left point and bottom right point
+    osg::Vec3 pos(0.0f,0.0f,0.0f);
+    osg::Vec3 topleft = pos;
+    osg::Vec3 bottomright = pos;
+    ///////////////////////////////////load the equiretangular image
+    //设置纹理
+    // std::string filename("/storage/sdcard0/equ2.mp4");
+    osg::Image* m_image = osgDB::readImageFile(mMovie.filename);
+    osg::ImageStream* m_imagestream = dynamic_cast<osg::ImageStream*>(m_image);
+    //if there are audio contained in the image sequence
+    if(m_imagestream){
+        osg::ImageStream::AudioStreams& audioStreams = m_imagestream->getAudioStreams();
+        if ( !audioStreams.empty())
+        {
+            osg::AudioStream* audioStream = audioStreams[0].get();
+            osg::notify(osg::NOTICE)<<"AudioStream read ["<<audioStream->getName()<<"]"<<std::endl;
+            //#if USE_SDL || USE_SDL2
+                // if (numAudioStreamsEnabled==0)
+                // {
+                // audioStream->setAudioSink(new SDLAudioSink(audioStream));
 
-	    osg::StateSet* stateset = geode->getOrCreateStateSet();
-//	    stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-	    //define the top left point and bottom right point
-	    osg::Vec3 pos(0.0f,0.0f,0.0f);
-	    osg::Vec3 topleft = pos;
-	    osg::Vec3 bottomright = pos;
-	    ///////////////////////////////////load the equiretangular image
-	    //设置纹理
-	   	// std::string filename("/storage/sdcard0/equ2.mp4");
-	    osg::Image* m_image = osgDB::readImageFile(mMovie.filename);
-	    osg::ImageStream* m_imagestream = dynamic_cast<osg::ImageStream*>(m_image);
-	    //if there are audio contained in the image sequence
-	    if(m_imagestream){
-			osg::ImageStream::AudioStreams& audioStreams = m_imagestream->getAudioStreams();
-			if ( !audioStreams.empty())
-			{
-				osg::AudioStream* audioStream = audioStreams[0].get();
-				osg::notify(osg::NOTICE)<<"AudioStream read ["<<audioStream->getName()<<"]"<<std::endl;
-//#if USE_SDL || USE_SDL2
-//					if (numAudioStreamsEnabled==0)
-//					{
-//						audioStream->setAudioSink(new SDLAudioSink(audioStream));
-//
-//						++numAudioStreamsEnabled;
-//					}
-//#endif
-			}
-			m_imagestream->play();
-	    }
+                // ++numAudioStreamsEnabled;
+                // }
+            //#endif
+        }
+        m_imagestream->play();
+    }
 //	    if the image or video file has loaded successful
-	    if(m_image){
-	    	osg::notify(osg::NOTICE)<<"image->s()"<<m_image->s()<<" image-t()="<<m_image->t()<<" aspectRatio="<<m_image->getPixelAspectRatio()<<std::endl;
-	    	//get the width and height of the image
-	    	float width = m_image->s() * m_image->getPixelAspectRatio();
-	    	float height = m_image->t();
-	    	//draw the sphere
-	    	bool useTextureRectangle = true;
-	    	bool xyPlane = false;
-	    	bool flip = true;
-	    	osg::ref_ptr<osg::Drawable> drawable = myCreateTexturedSphereByHandGeometry(pos, width, height,m_image, useTextureRectangle, xyPlane, flip);
-//	    	add SphpereDrawable to geode
-	    	geode->addDrawable(drawable.get());
-		    //set the bottom right pos
-                                bottomright = pos + osg::Vec3(width, height, 0.0f);
+    if(m_image){
+        osg::notify(osg::NOTICE)<<"image->s()"<<m_image->s()<<" image-t()="<<m_image->t()<<" aspectRatio="<<m_image->getPixelAspectRatio()<<std::endl;
+        //get the width and height of the image
+        float width = m_image->s() * m_image->getPixelAspectRatio();
+        float height = m_image->t();
+        //draw the sphere
+        bool xyPlane = false;
+        bool flip = true;
+        ////////////////////////////draw the sphere of the left eye
+        osg::ref_ptr<osg::Drawable> drawableL = myCreateTexturedSphereByHandGeometry(pos, width, height,m_image, true, xyPlane, flip);
+        osg::ref_ptr<osg::Drawable> drawableR = myCreateTexturedSphereByHandGeometry(pos, width, height, m_image, false, xyPlane, flip);
+        //	    	add SphpereDrawable to geode
+        geodeL->addDrawable(drawableL.get());
+        geodeR->addDrawable(drawableR.get());
+        //set the bottom right pos
+        // bottomright = pos + osg::Vec3(width, height, 0.0f);
 
-                                if (xyPlane) pos.y() += height*1.05f;
-                                               else pos.z() += height*1.05f;
+        // if (xyPlane) pos.y() += height*1.05f;
+        //                else pos.z() += height*1.05f;
 
-		////////////////////////////////////rotate it by 90
-                               // osg::Quat patRotate(osg::Quat(osg::inDegrees(0.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 0.0, 1.0)));
-                                osg::Quat patRotate(osg::Quat(osg::inDegrees(180.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 0.0, 1.0)));
-                                const osg::Vec3 posit(0, 0, 0);
-                                patTrans->setPosition(posit);
-                                patTrans->setAttitude(patRotate);
-                                
-                                // transform->addChild(geode.get());
+        ////////////////////////////////////rotate it by 90
+        // osg::Quat patRotate(osg::Quat(osg::inDegrees(0.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 0.0, 1.0)));
+        osg::Quat patRotate(osg::Quat(osg::inDegrees(180.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 0.0, 1.0)));
+        const osg::Vec3 posit(0, 0, 0);
+        patTransL->setPosition(posit);
+        patTransL->setAttitude(patRotate);
 
-                                patTrans->addChild(geode.get());
-	    }
+        patTransR->setPosition(posit);
+        patTransR->setAttitude(patRotate);
 
-		osg::Shader * vshader = new osg::Shader(osg::Shader::VERTEX, gVertexShaderfix );
-		osg::Shader * fshader = new osg::Shader(osg::Shader::FRAGMENT, gFragmentShaderfix );
+        patTransL->addChild(geodeL.get());
+        patTransR->addChild(geodeR.get());
+    }
 
-		osg::Program * prog = new osg::Program;
-		prog->addShader ( vshader );
-		prog->addShader ( fshader );
+    osg::Shader * vshader = new osg::Shader(osg::Shader::VERTEX, gVertexShaderfix );
+    osg::Shader * fshader = new osg::Shader(osg::Shader::FRAGMENT, gFragmentShaderfix );
 
-
-		geode->getOrCreateStateSet()->setAttribute ( prog );
-		 //add geode to root
-		_root->addChild(patTrans.get());
+    osg::Program * prog = new osg::Program;
+    prog->addShader ( vshader );
+    prog->addShader ( fshader );
 
 
-	    osgViewer::Viewer::Windows windows;
-	    _viewerMulti->getWindows(windows);
-	    for(osgViewer::Viewer::Windows::iterator itr = windows.begin();itr != windows.end();++itr)
-	    {
-	      (*itr)->getState()->setUseModelViewAndProjectionUniforms(true);
-	      (*itr)->getState()->setUseVertexAttributeAliasing(true);
-	    }
+    geodeL->getOrCreateStateSet()->setAttribute ( prog );
+    geodeR->getOrCreateStateSet()->setAttribute(  prog );
+    //add geode to root
+    _rootL->addChild(patTransL.get());
+    _rootR->addChild(patTransR.get());
 
-                    _manipulator->getNode();
-                    //left view start
-                    _viewerL->setSceneData(NULL);
-                    _viewerL->setSceneData(_root.get());
 
-                    _viewerL->getDatabasePager()->clear();
-                    _viewerL->getDatabasePager()->registerPagedLODs(_root.get());
-                    _viewerL->getDatabasePager()->setUpThreads(3, 1);
-                    _viewerL->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
-                    _viewerL->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
+    osgViewer::Viewer::Windows windows;
+    _viewerMulti->getWindows(windows);
+    for(osgViewer::Viewer::Windows::iterator itr = windows.begin();itr != windows.end();++itr)
+    {
+        (*itr)->getState()->setUseModelViewAndProjectionUniforms(true);
+        (*itr)->getState()->setUseVertexAttributeAliasing(true);
+    }
 
-                     // first you need to close the manipulator
-                    _viewerL->setCameraManipulator(NULL);
-                    // set the camera view matrix
-                    _viewerL->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-                    _viewerL->home();
+    _manipulator->getNode();
+    //left view start
+    _viewerL->setSceneData(NULL);
+    _viewerL->setSceneData(_rootL.get());
 
-                    // _viewerL->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-                    // _viewerL->home();
-                    //left view end
+    _viewerL->getDatabasePager()->clear();
+    _viewerL->getDatabasePager()->registerPagedLODs(_rootL.get());
+    _viewerL->getDatabasePager()->setUpThreads(3, 1);
+    _viewerL->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
+    _viewerL->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
 
-                    //right view start
-                    _viewerR->setSceneData(NULL);
-                    _viewerR->setSceneData(_root.get());
+    // first you need to close the manipulator
+    _viewerL->setCameraManipulator(NULL);
+    // set the camera view matrix
+    _viewerL->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    _viewerL->home();
 
-                    _viewerR->getDatabasePager()->clear();
-                    _viewerR->getDatabasePager()->registerPagedLODs(_root.get());
-                    _viewerR->getDatabasePager()->setUpThreads(3, 1);
-                    _viewerR->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
-                    _viewerR->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
+    // _viewerL->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    // _viewerL->home();
+    //left view end
 
-                     // first you need to close the manipulator
-                    _viewerR->setCameraManipulator(NULL);
-                    // set the camera view matrix
-                    _viewerR->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-                    _viewerR->home();
+    //right view start
+    _viewerR->setSceneData(NULL);
+    _viewerR->setSceneData(_rootR.get());
 
-                    // _viewerR->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-                    // _viewerR->home();
-                    //right view end
+    _viewerR->getDatabasePager()->clear();
+    _viewerR->getDatabasePager()->registerPagedLODs(_rootR.get());
+    _viewerR->getDatabasePager()->setUpThreads(3, 1);
+    _viewerR->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
+    _viewerR->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
 
-/*
-	    _viewer->setSceneData(NULL);
-	    _viewer->setSceneData(_root.get());
-	    
-	    _viewer->home();
+    // first you need to close the manipulator
+    _viewerR->setCameraManipulator(NULL);
+    // set the camera view matrix
+    _viewerR->getCamera()->setViewMatrixAsLookAt(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    _viewerR->home();
 
-	    _viewer->getDatabasePager()->clear();
-	    _viewer->getDatabasePager()->registerPagedLODs(_root.get());
-	    _viewer->getDatabasePager()->setUpThreads(3, 1);
-	    _viewer->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
-	    _viewer->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
+    // _viewerR->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    // _viewerR->home();
+    //right view end
 
-	    //first you need to close the manipulator
-	    // _viewer->setCameraManipulator(NULL);
-	    //set the camera view matrix
-                    _viewer->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
-                    _viewer->home();
+    /*
+    _viewer->setSceneData(NULL);
+    _viewer->setSceneData(_root.get());
 
-                    // _manipulator = new osgGA::TerrainManipulator();
+    _viewer->home();
 
-                    // _viewer->setCameraManipulator(_manipulator.get());
-*/
-                    // _viewerL->setCameraManipulator(_manipulator.get());
-                    // _viewerR->setCameraManipulator(_manipulator.get());
+    _viewer->getDatabasePager()->clear();
+    _viewer->getDatabasePager()->registerPagedLODs(_root.get());
+    _viewer->getDatabasePager()->setUpThreads(3, 1);
+    _viewer->getDatabasePager()->setTargetMaximumNumberOfPageLOD(2);
+    _viewer->getDatabasePager()->setUnrefImageDataAfterApplyPolicy(true, true);
 
-	    // pass the model to the MovieEventHandler so it can pick out ImageStream's to manipulate.
-	    MovieEventHandler* mehL = new MovieEventHandler();
-//			    meh->setMouseTracking( mouseTracking );
-	 //    meh->set( _viewer->getSceneData() );
-		// _viewer->addEventHandler( meh );
-                    mehL->set(_viewerL->getSceneData());
-                    _viewerL->addEventHandler(mehL);
+    //first you need to close the manipulator
+    // _viewer->setCameraManipulator(NULL);
+    //set the camera view matrix
+    _viewer->getCameraManipulator()->setHomePosition(osg::Vec3(0,  0, 0), osg::Vec3(0, 0, 1), osg::Vec3(0, 1, 0));
+    _viewer->home();
 
-                    MovieEventHandler* mehR = new MovieEventHandler();
-                    mehR->set(_viewerR->getSceneData());
-                    _viewerR->addEventHandler(mehR);
+    // _manipulator = new osgGA::TerrainManipulator();
 
-	    _vModelsToLoad.clear();
-	    equ_display = true;
+    // _viewer->setCameraManipulator(_manipulator.get());
+    */
+    // _viewerL->setCameraManipulator(_manipulator.get());
+    // _viewerR->setCameraManipulator(_manipulator.get());
+
+    // pass the model to the MovieEventHandler so it can pick out ImageStream's to manipulate.
+    MovieEventHandler* mehL = new MovieEventHandler();
+    //			    meh->setMouseTracking( mouseTracking );
+    //    meh->set( _viewer->getSceneData() );
+    // _viewer->addEventHandler( meh );
+    mehL->set(_viewerL->getSceneData());
+    _viewerL->addEventHandler(mehL);
+
+    MovieEventHandler* mehR = new MovieEventHandler();
+    mehR->set(_viewerR->getSceneData());
+    _viewerR->addEventHandler(mehR);
+
+    _vModelsToLoad.clear();
+    equ_display = true;
 }
 ///////////////////////////////////////////////
 //equirectangular  code for android start from here
@@ -225,7 +233,7 @@ osg::ShapeDrawable* OsgMainApp::myCreateTexturedSphereGeometry(const osg::Vec3& 
 }
 
 
-osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip)
+osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool isLefteye, bool xyPlane, bool option_flip)
 {
     bool flip = image->getOrigin()==osg::Image::TOP_LEFT;
     if (option_flip) flip = !flip;
@@ -267,6 +275,8 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     sectors = 20;
     radius = 100;
 
+    float startPoint = 0;
+    if(!isLefteye)  startPoint = float(rings - 1) / 2;
 
     float const R = 1. / static_cast<float>(rings - 1);
     float const S = 1. /static_cast<float>(sectors - 1);
@@ -297,13 +307,13 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
         }
     }
 
-    for (unsigned int r = 0; r < rings; ++r){
+    for (float r = 0; r < rings; ++r){
         for (unsigned int s = 0; s < sectors; ++s){
             float const z = sin( -M_PI_2 + M_PI * r * R);
             float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
             float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
 
-            sphereTexCoors->push_back(osg::Vec2(s * S, r * R));
+            sphereTexCoors->push_back(osg::Vec2(s * S, (r / 2  + startPoint) * R));
             sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
             sphereNormals->push_back(osg::Vec3(x, y, z));
         }
@@ -353,10 +363,10 @@ void OsgMainApp::deleteModels(){
         modelToDelete = _vModelsToDelete[i];
         osg::notify(osg::ALWAYS)<<"Deleting: "<<modelToDelete.name<<std::endl;
 
-        for(unsigned int j=_root->getNumChildren(); j>0; j--){
-            osg::ref_ptr<osg::Node> children = _root->getChild(j-1);
+        for(unsigned int j=_rootR->getNumChildren(); j>0; j--){
+            osg::ref_ptr<osg::Node> children = _rootR->getChild(j-1);
             if(children->getName() == modelToDelete.name){
-                _root->removeChild(children);
+                _rootR->removeChild(children);
             }
         }
 
@@ -412,7 +422,8 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
     _viewerR->addEventHandler(new osgViewer::LODScaleHandler);
     //view right end
 
-    _root = new osg::Group();
+    _rootL = new osg::Group();
+    _rootR = new osg::Group();
     //set up two embeded windows
      _gweL = new osgViewer::GraphicsWindowEmbedded(x, y, width/2, height);
      _gweR = new osgViewer::GraphicsWindowEmbedded(x + width / 2, y, width / 2, height);
