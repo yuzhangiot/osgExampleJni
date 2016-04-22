@@ -55,6 +55,7 @@
 #include <osg/Geometry>
 #include <osg/StateSet>
 #include <osg/Material>
+ #include <osg/Texture1D>
 #include <osg/Texture2D>
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
@@ -210,6 +211,7 @@ private:
     osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> _gweR;
     osg::ref_ptr<osg::Group> _rootL;
     osg::ref_ptr<osg::Group> _rootR;
+    osg::ref_ptr<osg::Group> _rootLDistort;
     osg::ref_ptr<osg::StateSet> _state;
     osg::ref_ptr<osgGA::SphericalManipulator> _manipulator;
     // osg::ref_ptr<osgGA::OrbitManipulator> _manipulator;
@@ -222,6 +224,9 @@ private:
     bool _clean_scene;
     //This bool val is a indicate of whether the equtangular is displayed
     bool equ_display;
+
+    int _screenWidth;
+    int _screenHeight;
 
     OsgAndroidNotifyHandler *_notifyHandler;
 
@@ -237,6 +242,9 @@ private:
     void movieSample();
     osg::ShapeDrawable* myCreateTexturedSphereGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip);
     osg::Geometry* myCreateTexturedSphereByHandGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool isLefteye, bool xyPlane, bool option_flip);
+    osg::Geometry* createDomeDistortionMeth(const osg::Vec3& origin, const osg::Vec3& widthVector, const osg::Vec3& heightVector);
+    osg::Group*  createDistortionSubgraph(osg::Group* subgraph, const osg::Vec4& clearColour);
+    osg::Geometry* myCreateTexturedQuadGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip);
 
 public:
     OsgMainApp();

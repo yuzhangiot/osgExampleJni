@@ -28,16 +28,14 @@ void OsgMainApp::movieSample(){
     //defind a new geode root node, a stateSet of both eyes
     osg::ref_ptr<osg::Geode> geodeL = new osg::Geode;
     osg::ref_ptr<osg::Geode> geodeR = new osg::Geode;
+    osg::ref_ptr<osg::Geode> geodeTest = new osg::Geode;
     // osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
     osg::ref_ptr<osg::PositionAttitudeTransform> patTransL = new osg::PositionAttitudeTransform();
     osg::ref_ptr<osg::PositionAttitudeTransform> patTransR = new osg::PositionAttitudeTransform();
-    osg::StateSet* statesetL = geodeL->getOrCreateStateSet();
-    osg::StateSet* statesetR = geodeR->getOrCreateStateSet();
-    //	    stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    // osg::StateSet* statesetL = geodeL->getOrCreateStateSet();
+    // osg::StateSet* statesetR = geodeR->getOrCreateStateSet();
     //define the top left point and bottom right point
     osg::Vec3 pos(0.0f,0.0f,0.0f);
-    osg::Vec3 topleft = pos;
-    osg::Vec3 bottomright = pos;
     ///////////////////////////////////load the equiretangular image
     //设置纹理
     // std::string filename("/storage/sdcard0/equ2.mp4");
@@ -62,7 +60,7 @@ void OsgMainApp::movieSample(){
         m_imagestream->play();
     }
 //	    if the image or video file has loaded successful
-    if(m_image){
+   if(m_image){
         osg::notify(osg::NOTICE)<<"image->s()"<<m_image->s()<<" image-t()="<<m_image->t()<<" aspectRatio="<<m_image->getPixelAspectRatio()<<std::endl;
         //get the width and height of the image
         float width = m_image->s() * m_image->getPixelAspectRatio();
@@ -70,17 +68,14 @@ void OsgMainApp::movieSample(){
         //draw the sphere
         bool xyPlane = false;
         bool flip = true;
+        bool isLefteye = true;
         ////////////////////////////draw the sphere of the left eye
-        osg::ref_ptr<osg::Drawable> drawableL = myCreateTexturedSphereByHandGeometry(pos, width, height,m_image, true, xyPlane, flip);
-        osg::ref_ptr<osg::Drawable> drawableR = myCreateTexturedSphereByHandGeometry(pos, width, height, m_image, false, xyPlane, flip);
+        osg::ref_ptr<osg::Drawable> drawableL = myCreateTexturedSphereByHandGeometry(pos, width, height,m_image, isLefteye, xyPlane, flip);
+        // osg::ref_ptr<osg::Drawable> drawableL = myCreateTexturedQuadGeometry(osg::Vec3(1, 1, 5), width, height, m_image, false, xyPlane, false);
+        osg::ref_ptr<osg::Drawable> drawableR = myCreateTexturedSphereByHandGeometry(pos, width, height, m_image, !isLefteye, xyPlane, flip);
         //	    	add SphpereDrawable to geode
         geodeL->addDrawable(drawableL.get());
         geodeR->addDrawable(drawableR.get());
-        //set the bottom right pos
-        // bottomright = pos + osg::Vec3(width, height, 0.0f);
-
-        // if (xyPlane) pos.y() += height*1.05f;
-        //                else pos.z() += height*1.05f;
 
         ////////////////////////////////////rotate it by 90
         // osg::Quat patRotate(osg::Quat(osg::inDegrees(0.0), osg::Vec3(1.0,  0.0, 0.0)) * osg::Quat(osg::inDegrees(180.0), osg::Vec3(0.0, 1.0, 0.0)) * osg::Quat(osg::inDegrees(0.0), osg::Vec3(0.0, 0.0, 1.0)));
@@ -94,7 +89,7 @@ void OsgMainApp::movieSample(){
 
         patTransL->addChild(geodeL.get());
         patTransR->addChild(geodeR.get());
-    }
+   }
 
     osg::Shader * vshader = new osg::Shader(osg::Shader::VERTEX, gVertexShaderfix );
     osg::Shader * fshader = new osg::Shader(osg::Shader::FRAGMENT, gFragmentShaderfix );
@@ -102,7 +97,6 @@ void OsgMainApp::movieSample(){
     osg::Program * prog = new osg::Program;
     prog->addShader ( vshader );
     prog->addShader ( fshader );
-
 
     geodeL->getOrCreateStateSet()->setAttribute ( prog );
     geodeR->getOrCreateStateSet()->setAttribute(  prog );
@@ -120,6 +114,46 @@ void OsgMainApp::movieSample(){
     }
 
     _manipulator->getNode();
+    //We start make the root node distort here
+    unsigned int tex_width = 1024;
+    unsigned int tex_height = 1024;
+
+    //set up distort  cam
+    osg::Texture2D* distortTexture = new osg::Texture2D;
+    distortTexture->setTextureSize(tex_width, tex_height);
+    distortTexture->setInternalFormat(GL_RGBA);
+    distortTexture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
+    distortTexture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+
+
+    // //set up render to texture cam
+    // {
+    //     osg::Camera* camera = new osg::Camera;
+    //     // set clear the color and depth buffer
+    //     camera->setClearColor(osg::Vec4(0.0f, 1.0f, 0.0f, 0.0f));
+    //     camera->setClearMask(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    //     // just inherit the main cameras view
+    //     // camera->setReferenceFrame(osg::Transform::RELATIVE_RF);
+    //     camera->setProjectionMatrix(osg::Matrixd::identity());
+    //     camera->setViewMatrix(osg::Matrixd::identity());
+
+    //     //set viewport
+    //     camera->setViewport(0, 0, tex_width, tex_height);
+        
+    //     // set the camera to render before the main camera.
+    //     camera->setRenderOrder(osg::Camera::PRE_RENDER);
+    //     // tell the camera to use OpenGL frame buffer object where supported.
+    //     camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+
+    //     //attach cam to texture
+    //     camera->attach(osg::Camera::COLOR_BUFFER, distortTexture);
+    //     camera->setReferenceFrame(osg::Transform::RELATIVE_RF);
+
+    //     camera->addChild(_rootL.get());
+
+    // }
+  
+    // _rootLDistort = createDistortionSubgraph(_rootL.get(),  _viewerL->getCamera()->getClearColor());
     //left view start
     _viewerL->setSceneData(NULL);
     _viewerL->setSceneData(_rootL.get());
@@ -206,30 +240,56 @@ void OsgMainApp::movieSample(){
 //2016.03.16
 ////////////////////////////////////////////////
 
-osg::ShapeDrawable* OsgMainApp::myCreateTexturedSphereGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip)
+osg::Geometry* OsgMainApp::myCreateTexturedQuadGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip)
 {
     bool flip = image->getOrigin()==osg::Image::TOP_LEFT;
     if (option_flip) flip = !flip;
+    //Draw a quad by hand
+    osg::Geometry* sg = new osg::Geometry;
+    osg::ref_ptr<osg::Vec3Array> quadVertices = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec2Array> quadTexCoors = new osg::Vec2Array;
+    int length = 20;
 
-    //add a sphere
-    osg::TessellationHints* hints = new osg::TessellationHints;
-    //set the rotate speed
-    hints->setDetailRatio(15.0f);
-    //create a new sphere
-    osg::ShapeDrawable* sd = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0,0.0,0.0), osg::WGS_84_RADIUS_POLAR), hints);
-    //set the texture for the sphere
+    quadVertices->push_back(osg::Vec3(pos));
+    quadVertices->push_back(osg::Vec3(pos.x(), pos.y() + length/2, pos.z()));
+    quadVertices->push_back(osg::Vec3(pos.x() + length, pos.y() + length/2, pos.z()));
+    quadVertices->push_back(osg::Vec3(pos.x() + length, pos.y(), pos.z()));
+
+    quadTexCoors->push_back(osg::Vec2(0, 0));
+    quadTexCoors->push_back(osg::Vec2(0, 1));
+    quadTexCoors->push_back(osg::Vec2(1, 1));
+    quadTexCoors->push_back(osg::Vec2(1, 0));
+
+    sg->setVertexArray(quadVertices);
+    sg->setTexCoordArray(0, quadTexCoors);
+
+    osg::ref_ptr<osg::DrawElementsUInt> face_tri = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
+    face_tri->push_back(0);
+    face_tri->push_back(1);
+    face_tri->push_back(3);
+    face_tri->push_back(2);
+
+    sg->addPrimitiveSet(face_tri);
+
+
+
+    // osg::Geometry* pictureQuad = osg::createTexturedQuadGeometry(pos,
+    //                                    osg::Vec3(width,0.0f,0.0f),
+    //                                    xyPlane ? osg::Vec3(0.0f,height,0.0f) : osg::Vec3(0.0f,0.0f,height),
+    //                                    0.0f, flip ? 1.0f : 0.0f , 1.0f, flip ? 0.0f : 1.0f);
+
     osg::Texture2D* texture = new osg::Texture2D(image);
     texture->setResizeNonPowerOfTwoHint(false);
     texture->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
     texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 
-    sd->getOrCreateStateSet()->setTextureAttributeAndModes(0,
-                            texture,
-                            osg::StateAttribute::ON);
 
-     return sd;
+    sg->getOrCreateStateSet()->setTextureAttributeAndModes(0,
+                texture,
+                osg::StateAttribute::ON);
 
+    return sg;
 }
 
 
@@ -271,8 +331,8 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     unsigned int  sectors;
     double  radius;
     //create a 10*10 sphere
-    rings = 20;
-    sectors = 20;
+    rings = 40;
+    sectors = 40;
     radius = 100;
 
     float startPoint = 0;
@@ -281,12 +341,12 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
     float const R = 1. / static_cast<float>(rings - 1);
     float const S = 1. /static_cast<float>(sectors - 1);
 
-    for (unsigned int r = 0; r < rings; ++r){
+/*    for (unsigned int r = 0; r < rings; ++r){
         for (unsigned int s = 0; s < sectors; ++s){
             float const z = sin( -M_PI_2 + M_PI * r * R);
             float const x = cos(2 * M_PI * s * S) * sin(M_PI * R * r);
             float const y = sin(2 * M_PI * s * S) * sin(M_PI * R * r);
-/*  warp texture uv from fish eye to equ
+  warp texture uv from fish eye to equ
             int u = std::min(s * S * map_cols, (float)map_cols - 1);
             int v = std::min(r * R * map_rows, (float)map_rows - 1);
 
@@ -301,11 +361,11 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
             } else {
                 sphereTexCoors->push_back(osg::Vec2(0, 0));
             }
-*/
+
             sphereVertices->push_back(osg::Vec3(x * radius, y * radius, z * radius));
             sphereNormals->push_back(osg::Vec3(x, y, z));
         }
-    }
+    }*/
 
     for (float r = 0; r < rings; ++r){
         for (unsigned int s = 0; s < sectors; ++s){
@@ -324,7 +384,7 @@ osg::Geometry* OsgMainApp::myCreateTexturedSphereByHandGeometry(const osg::Vec3&
 
     for (unsigned int r = 0; r < rings - 1; ++r){
         for (unsigned int s = 0; s < sectors - 1 ; ++s){
-            osg::ref_ptr<osg::DrawElementsUInt> face = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 3);
+            osg::ref_ptr<osg::DrawElementsUInt> face = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
                 //CCW order
                 face->push_back((r + 0) * sectors + (s + 0));
                 face->push_back((r + 0) * sectors + (s + 1));
@@ -388,7 +448,10 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
 
     osg::notify(osg::ALWAYS)<<"Testing"<<std::endl;
 
-    //judge if the  multiViewer is empty, if not return
+    _screenWidth = width;
+    _screenHeight = height;
+
+    //judge if the  multiViewer is empty, if not then return
     _viewerMulti = new osgViewer::CompositeViewer();
     if (_viewerMulti->getNumViews() != 0) return;
 
@@ -424,11 +487,14 @@ void OsgMainApp::initOsgWindow(int x,int y,int width,int height){
 
     _rootL = new osg::Group();
     _rootR = new osg::Group();
+    _rootLDistort = new osg::Group();
     //set up two embeded windows
      _gweL = new osgViewer::GraphicsWindowEmbedded(x, y, width/2, height);
      _gweR = new osgViewer::GraphicsWindowEmbedded(x + width / 2, y, width / 2, height);
      __android_log_write(ANDROID_LOG_ERROR, "OSGANDROID",
             "Graphics embeded windows build successful!");
+
+
     //bind gwe to camera and then to viewer
     _viewerL->getCamera()->setGraphicsContext(_gweL.get());
     _viewerR->getCamera()->setGraphicsContext(_gweR.get());
